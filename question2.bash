@@ -1,26 +1,20 @@
 #!/bin/bash
-s=$(upower -i $(upower -e | grep BAT) | grep "percentage")
-chargestate=$(upower -i $(upower -e | grep BAT) | grep "state")
-finalchargestate=${chargestate:11}
-finals=${s: -3}
-echo $finalchargestate
-state1="state: charging"
-state0="state: discharging"
-
-finalss=${finals: 0 : 2} 
-
-if [[ $((finalss)) -le 100 ]]
+s=s=$(cat /sys/class/power_supply/BAT0/capacity)
+chargestate=$(cat /sys/class/power_supply/BAT0/status)
+state1="Charging"
+state0="Discharging"
+if [[ $((s)) -le 30 ]]
 then
-	echo "need to go to powersave"
+	echo powersave | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+else
+	if [[ $((s)) -eq 100 ]]
+	then 
+		if [[ "$chargestate" == "$state0" ]]
+			then	
+			echo conservative | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+		fi
+	fi
+	if [[ "$chargestate" == "$state1" ]];then
+ 	echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+	fi
 fi
-if [[ $((finalss)) -ge 99 ]]
-then 
-if [[ "$finalchargestate" == "$state0" ]]
-then	
-	echo "need to go to conservative"
-fi
-fi
-if [[ "$finalchargestate" == "$state1" ]];then
- 	echo "performance"
-fi
-echo $finalss
